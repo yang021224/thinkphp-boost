@@ -148,12 +148,13 @@ class InstallCommand extends Command
     {
         $rootPath = $this->app->getRootPath();
 
+        $root    = rtrim($rootPath, DIRECTORY_SEPARATOR);
         $mcpJson = json_encode([
             'mcpServers' => [
                 'thinkphp-boost' => [
-                    'command' => 'php',
-                    'args'    => ['think', 'boost:serve'],
-                    'cwd'     => rtrim($rootPath, DIRECTORY_SEPARATOR),
+                    'command' => PHP_BINARY,
+                    'args'    => [$root . DIRECTORY_SEPARATOR . 'think', 'boost:serve'],
+                    'cwd'     => $root,
                 ],
             ],
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";

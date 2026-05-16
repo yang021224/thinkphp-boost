@@ -88,10 +88,12 @@ abstract class Agent
      */
     protected function mcpServerConfig(string $rootPath): array
     {
+        $root = rtrim($rootPath, DIRECTORY_SEPARATOR);
+
         return [
-            'command' => 'php',
-            'args'    => ['think', 'boost:serve'],
-            'cwd'     => rtrim($rootPath, DIRECTORY_SEPARATOR),
+            'command' => PHP_BINARY,
+            'args'    => [$root . DIRECTORY_SEPARATOR . 'think', 'boost:serve'],
+            'cwd'     => $root,
         ];
     }
 
