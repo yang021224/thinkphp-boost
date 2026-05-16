@@ -1,0 +1,8 @@
+/vendor/
+/node_modules/
+/.idea/
+/.vscode/
+*.log
+.DS_Store
+composer.lock
+/.claude/settings.local.json

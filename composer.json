@@ -1,0 +1,38 @@
+{
+  "name": "yangmingzhi/thinkphp-boost",
+  "description": "AI-powered MCP server for ThinkPHP 8.x applications",
+  "type": "library",
+  "keywords": ["thinkphp", "mcp", "ai", "claude", "cursor", "model-context-protocol"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "yangmingzhi",
+      "email": "JenRusselltxv@cybergal.com"
+    }
+  ],
+  "require": {
+    "php": "^8.1",
+    "topthink/framework": "^8.0"
+  },
+  "require-dev": {
+    "friendsofphp/php-cs-fixer": "^3.0"
+  },
+  "suggest": {
+    "friendsofphp/php-cs-fixer": "用于 format_code 工具的代码格式化功能（^3.0）"
+  },
+  "autoload": {
+    "psr-4": {
+      "Yangmingzhi\\ThinkphpBoost\\": "src/"
+    }
+  },
+  "extra": {
+    "think": {
+      "services": ["Yangmingzhi\\ThinkphpBoost\\BoostServiceProvider"],
+      "config": {
+        "boost": "config/boost.php"
+      }
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
