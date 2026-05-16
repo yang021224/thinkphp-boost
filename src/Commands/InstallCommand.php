@@ -57,7 +57,7 @@ class InstallCommand extends Command
                 'Gemini CLI',
                 '跳过（手动配置）',
             ],
-            0
+            'Claude Code'
         );
 
         $output->writeln('');
