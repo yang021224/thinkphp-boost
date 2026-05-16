@@ -191,13 +191,14 @@ class Server
      */
     private function handleInitialize(int|string|null $id, array $params): array
     {
-        $clientName    = $params['clientInfo']['name'] ?? 'unknown';
-        $clientVersion = $params['clientInfo']['version'] ?? 'unknown';
+        $clientName        = $params['clientInfo']['name'] ?? 'unknown';
+        $clientVersion     = $params['clientInfo']['version'] ?? 'unknown';
+        $protocolVersion   = $params['protocolVersion'] ?? '';
 
-        $this->log("客户端信息: {$clientName} v{$clientVersion}");
+        $this->log("客户端信息: {$clientName} v{$clientVersion}，协议版本: {$protocolVersion}");
         $this->initialized = true;
 
-        return Protocol::buildInitializeResponse($id, $this->instructions);
+        return Protocol::buildInitializeResponse($id, $this->instructions, $protocolVersion);
     }
 
     /**

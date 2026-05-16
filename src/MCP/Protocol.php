@@ -60,11 +60,16 @@ class Protocol
 
     /**
      * 构建 initialize 响应
+     *
+     * 协商回客户端请求的协议版本（若不支持则降级到已知最高版本）
      */
-    public static function buildInitializeResponse(int|string|null $id, string $instructions = ''): array
+    public static function buildInitializeResponse(int|string|null $id, string $instructions = '', string $clientVersion = ''): array
     {
+        $knownVersions   = ['2025-03-26', '2024-11-05'];
+        $negotiated      = in_array($clientVersion, $knownVersions, true) ? $clientVersion : self::PROTOCOL_VERSION;
+
         $result = [
-            'protocolVersion' => self::PROTOCOL_VERSION,
+            'protocolVersion' => $negotiated,
             'capabilities'    => [
                 'tools'     => new \stdClass(),
                 'prompts'   => new \stdClass(),
