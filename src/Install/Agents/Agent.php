@@ -74,7 +74,7 @@ abstract class Agent
             return true;
         }
 
-        $existing['mcpServers'][$serverKey] = $this->mcpServerConfig();
+        $existing['mcpServers'][$serverKey] = $this->mcpServerConfig($rootPath);
 
         $json = json_encode($existing, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
 
@@ -86,11 +86,12 @@ abstract class Agent
      *
      * @return array<string, mixed>
      */
-    protected function mcpServerConfig(): array
+    protected function mcpServerConfig(string $rootPath): array
     {
         return [
             'command' => 'php',
             'args'    => ['think', 'boost:serve'],
+            'cwd'     => rtrim($rootPath, DIRECTORY_SEPARATOR),
         ];
     }
 

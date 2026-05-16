@@ -31,15 +31,13 @@ class Codex extends Agent
         return ['.codex', '.codex/mcp.json'];
     }
 
-    protected function mcpServerConfig(): array
+    protected function mcpServerConfig(string $rootPath): array
     {
         // Codex 需要完整的绝对路径
         return [
             'command' => PHP_BINARY,
-            'args'    => [
-                dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'artisan',
-                'boost:serve',
-            ],
+            'args'    => ['think', 'boost:serve'],
+            'cwd'     => rtrim($rootPath, DIRECTORY_SEPARATOR),
         ];
     }
 }

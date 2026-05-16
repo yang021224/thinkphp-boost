@@ -153,6 +153,7 @@ class InstallCommand extends Command
                 'thinkphp-boost' => [
                     'command' => 'php',
                     'args'    => ['think', 'boost:serve'],
+                    'cwd'     => rtrim($rootPath, DIRECTORY_SEPARATOR),
                 ],
             ],
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";

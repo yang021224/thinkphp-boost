@@ -121,7 +121,24 @@ class Server
 
             $this->log("收到请求: {$line}");
 
-            $response = $this->handleRequest($line);
+            // ob_start 防止工具内部的意外 echo/print 污染 JSON-RPC STDOUT 流
+            ob_start();
+            try {
+                $response = $this->handleRequest($line);
+            } catch (\Throwable $e) {
+                $this->log("未捕获异常: {$e->getMessage()}");
+                $decoded  = json_decode($line, true);
+                $response = Protocol::buildErrorResponse(
+                    $decoded['id'] ?? null,
+                    Protocol::ERROR_INTERNAL_ERROR,
+                    'Unexpected error: ' . $e->getMessage()
+                );
+            } finally {
+                // 丢弃任何意外输出，避免破坏协议
+                while (ob_get_level() > 0) {
+                    ob_end_clean();
+                }
+            }
 
             if ($response !== null) {
                 $this->sendResponse($response);
