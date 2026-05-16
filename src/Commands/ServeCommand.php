@@ -54,6 +54,23 @@ class ServeCommand extends Command
     {
         $debug = (bool)$input->getOption('debug');
 
+        // 长驻进程必须解除 PHP 的默认资源限制，否则大表 schema 或慢查询会 OOM / 超时崩溃
+        ini_set('memory_limit', '-1');
+        set_time_limit(0);
+
+        // 确保所有 PHP 错误输出到 STDERR，不污染 JSON-RPC STDOUT 流
+        ini_set('display_errors', '0');
+        ini_set('log_errors', '1');
+        ini_set('error_log', 'stderr');
+
+        // Fatal Error 时记录到 STDERR 再退出，方便排查
+        register_shutdown_function(static function (): void {
+            $err = error_get_last();
+            if ($err !== null && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+                fwrite(STDERR, '[thinkphp-boost] Fatal: ' . $err['message'] . ' in ' . $err['file'] . ':' . $err['line'] . "\n");
+            }
+        });
+
         fwrite(STDERR, "启动 ThinkPHP Boost MCP Server...\n");
 
         $app    = $this->app;
