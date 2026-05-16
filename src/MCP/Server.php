@@ -125,7 +125,9 @@ class Server
             ob_start();
             try {
                 $response = $this->handleRequest($line);
+                ob_end_clean();
             } catch (\Throwable $e) {
+                ob_end_clean();
                 $this->log("未捕获异常: {$e->getMessage()}");
                 $decoded  = json_decode($line, true);
                 $response = Protocol::buildErrorResponse(
@@ -133,11 +135,6 @@ class Server
                     Protocol::ERROR_INTERNAL_ERROR,
                     'Unexpected error: ' . $e->getMessage()
                 );
-            } finally {
-                // 丢弃任何意外输出，避免破坏协议
-                while (ob_get_level() > 0) {
-                    ob_end_clean();
-                }
             }
 
             if ($response !== null) {
