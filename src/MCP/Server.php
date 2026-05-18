@@ -48,7 +48,7 @@ class Server
     public function registerTool(ToolInterface $tool): self
     {
         $this->tools[$tool->getName()] = $tool;
-        $this->log("已注册工具: {$tool->getName()}");
+        $this->log("已注册工具: {$tool->getName()}", false);
         return $this;
     }
 
@@ -98,9 +98,9 @@ class Server
      */
     public function run(): never
     {
-        $this->log("ThinkPHP Boost MCP Server 启动（协议版本: " . Protocol::PROTOCOL_VERSION . "）");
-        $this->log("已注册工具: " . implode(', ', array_keys($this->tools)));
-        $this->log("等待来自 STDIN 的请求...");
+        $this->log("ThinkPHP Boost MCP Server 启动（协议版本: " . Protocol::PROTOCOL_VERSION . "）", false);
+        $this->log("已注册工具: " . implode(', ', array_keys($this->tools)), false);
+        $this->log("等待来自 STDIN 的请求...", false);
 
         // 设置为非缓冲输出，确保每条响应立即发送
         if (function_exists('stream_set_blocking')) {
@@ -112,7 +112,7 @@ class Server
 
             // STDIN 关闭（EOF），正常退出
             if ($line === false) {
-                $this->log("STDIN 已关闭，服务器退出。");
+                $this->log("STDIN 已关闭，服务器退出。", false);
                 exit(0);
             }
 
@@ -166,11 +166,9 @@ class Server
         $id     = $request['id'];
         $method = $request['method'];
         $params = $request['params'];
+        $isNotification = (bool)$request['isNotification'];
 
         $this->log("处理方法: {$method}（id=" . json_encode($id) . "）", false);
-
-        // 通知类消息（无 id）不需要返回响应
-        $isNotification = !array_key_exists('id', json_decode($rawJson, true));
 
         return match ($method) {
             Protocol::METHOD_INITIALIZE    => $this->handleInitialize($id, $params),
@@ -179,6 +177,7 @@ class Server
             Protocol::METHOD_TOOLS_CALL    => $this->handleToolsCall($id, $params),
             Protocol::METHOD_PING          => Protocol::buildPongResponse($id),
             Protocol::METHOD_CANCEL        => null, // 取消通知，不需要响应
+            Protocol::METHOD_LEGACY_CANCEL => null, // 兼容旧客户端的取消通知
             Protocol::METHOD_PROMPTS_LIST        => $this->handlePromptsList($id),
             Protocol::METHOD_PROMPTS_GET         => $this->handlePromptsGet($id, $params),
             Protocol::METHOD_RESOURCES_LIST      => $this->handleResourcesList($id),
@@ -200,13 +199,13 @@ class Server
         $protocolVersion   = $params['protocolVersion'] ?? '';
         $clientCapabilities = $params['capabilities'] ?? [];
 
-        $this->log("收到 initialize 请求: 客户端={$clientName} v{$clientVersion}, 请求协议版本={$protocolVersion}");
+        $this->log("收到 initialize 请求: 客户端={$clientName} v{$clientVersion}, 请求协议版本={$protocolVersion}", false);
 
         $response = Protocol::buildInitializeResponse($id, $this->instructions, $protocolVersion);
         $this->initialized = true;
 
         $negotiated = $response['result']['protocolVersion'] ?? '?';
-        $this->log("初始化握手完成，协商协议版本: {$negotiated}");
+        $this->log("初始化握手完成，协商协议版本: {$negotiated}", false);
 
         return $response;
     }

@@ -75,7 +75,9 @@ class ServeCommand extends Command
             }
         });
 
-        fwrite(STDERR, "启动 ThinkPHP Boost MCP Server...\n");
+        if ($debug) {
+            fwrite(STDERR, "启动 ThinkPHP Boost MCP Server...\n");
+        }
 
         $app    = $this->app;
         $config = [];
@@ -97,13 +99,17 @@ class ServeCommand extends Command
                 $tool = new $class($app);
                 if ($tool instanceof ToolInterface) {
                     $server->registerTool($tool);
-                    fwrite(STDERR, "已加载工具: {$tool->getName()}\n");
+                    if ($debug) {
+                        fwrite(STDERR, "已加载工具: {$tool->getName()}\n");
+                    }
                 }
             }
         }
 
-        fwrite(STDERR, "MCP Server 就绪，等待请求（通过 STDIN）...\n");
-        fwrite(STDERR, "按 Ctrl+C 停止服务器\n");
+        if ($debug) {
+            fwrite(STDERR, "MCP Server 就绪，等待请求（通过 STDIN）...\n");
+            fwrite(STDERR, "按 Ctrl+C 停止服务器\n");
+        }
 
         // 加载 Guidelines
         $guidelinesLoader = new \Yangmingzhi\ThinkphpBoost\MCP\GuidelinesLoader($app->getRootPath());
@@ -118,7 +124,9 @@ class ServeCommand extends Command
         $skillsRegistry = new \Yangmingzhi\ThinkphpBoost\MCP\SkillsRegistry($app->getRootPath());
         $skillsRegistry->loadAll();
         $server->setSkillsRegistry($skillsRegistry);
-        fwrite(STDERR, "Skills 系统已加载（" . count($skillsRegistry->list()) . " 个技能）\n");
+        if ($debug) {
+            fwrite(STDERR, "Skills 系统已加载（" . count($skillsRegistry->list()) . " 个技能）\n");
+        }
 
         // 丢弃启动期间缓冲区中积累的任何意外 STDOUT 输出，确保 JSON-RPC 流干净
         while (ob_get_level() > $startObLevel) {

@@ -16,7 +16,7 @@ ThinkPHP Boost 是一个受 `laravel-boost` 启发的工具包。它在你的 Th
 **技术栈：**
 - PHP 8.1+，ThinkPHP 8.x
 - 纯 PHP 实现，不依赖 Node.js
-- MCP 协议版本：2024-11-05
+- MCP 协议版本：2025-11-25（兼容 2025-06-18、2025-03-26、2024-11-05）
 - 传输层：stdio（JSON-RPC 2.0）
 
 ---

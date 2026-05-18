@@ -7,13 +7,21 @@ namespace Yangmingzhi\ThinkphpBoost\MCP;
 /**
  * MCP (Model Context Protocol) 协议常量和消息构建工具
  *
- * 协议版本：2024-11-05
+ * 协议版本：2025-11-25
  * 传输层：stdio (JSON-RPC 2.0)
  */
 class Protocol
 {
     // MCP 协议版本
-    public const PROTOCOL_VERSION = '2024-11-05';
+    public const PROTOCOL_VERSION = '2025-11-25';
+
+    /** @var string[] 按优先级从高到低排列的兼容协议版本 */
+    public const SUPPORTED_PROTOCOL_VERSIONS = [
+        '2025-11-25',
+        '2025-06-18',
+        '2025-03-26',
+        '2024-11-05',
+    ];
 
     // Server 信息
     public const SERVER_NAME    = 'thinkphp-boost';
@@ -28,7 +36,8 @@ class Protocol
     public const METHOD_TOOLS_LIST          = 'tools/list';
     public const METHOD_TOOLS_CALL          = 'tools/call';
     public const METHOD_PING                = 'ping';
-    public const METHOD_CANCEL              = '$/cancelRequest';
+    public const METHOD_CANCEL              = 'notifications/cancelled';
+    public const METHOD_LEGACY_CANCEL       = '$/cancelRequest';
 
     // Prompts 方法
     public const METHOD_PROMPTS_LIST = 'prompts/list';
@@ -65,8 +74,9 @@ class Protocol
      */
     public static function buildInitializeResponse(int|string|null $id, string $instructions = '', string $clientVersion = ''): array
     {
-        $knownVersions   = ['2025-03-26', '2024-11-05'];
-        $negotiated      = in_array($clientVersion, $knownVersions, true) ? $clientVersion : $knownVersions[0];
+        $negotiated = in_array($clientVersion, self::SUPPORTED_PROTOCOL_VERSIONS, true)
+            ? $clientVersion
+            : self::PROTOCOL_VERSION;
 
         $result = [
             'protocolVersion' => $negotiated,
@@ -213,7 +223,7 @@ class Protocol
     /**
      * 解码 JSON-RPC 请求
      *
-     * @return array{id: int|string|null, method: string, params: array}
+     * @return array{id: int|string|null, method: string, params: array, isNotification: bool}
      * @throws \JsonException|\InvalidArgumentException
      */
     public static function decode(string $json): array
@@ -234,9 +244,10 @@ class Protocol
         }
 
         return [
-            'id'     => $data['id'] ?? null,
-            'method' => $method,
-            'params' => is_array($data['params'] ?? null) ? $data['params'] : [],
+            'id'             => $data['id'] ?? null,
+            'method'         => $method,
+            'params'         => is_array($data['params'] ?? null) ? $data['params'] : [],
+            'isNotification' => !array_key_exists('id', $data),
         ];
     }
 }
