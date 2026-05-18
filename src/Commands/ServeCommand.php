@@ -52,6 +52,10 @@ class ServeCommand extends Command
 
     protected function execute(Input $input, Output $output): int
     {
+        // 尽早开启输出缓冲，防止 ThinkPHP 启动/运行期间的任何意外 echo/print 污染 JSON-RPC STDOUT
+        $startObLevel = ob_get_level();
+        ob_start();
+
         $debug = (bool)$input->getOption('debug');
 
         // 长驻进程必须解除 PHP 的默认资源限制，否则大表 schema 或慢查询会 OOM / 超时崩溃
@@ -115,6 +119,11 @@ class ServeCommand extends Command
         $skillsRegistry->loadAll();
         $server->setSkillsRegistry($skillsRegistry);
         fwrite(STDERR, "Skills 系统已加载（" . count($skillsRegistry->list()) . " 个技能）\n");
+
+        // 丢弃启动期间缓冲区中积累的任何意外 STDOUT 输出，确保 JSON-RPC 流干净
+        while (ob_get_level() > $startObLevel) {
+            ob_end_clean();
+        }
 
         // 启动服务器主循环（此方法不会返回）
         $server->run();

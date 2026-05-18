@@ -66,7 +66,7 @@ class Protocol
     public static function buildInitializeResponse(int|string|null $id, string $instructions = '', string $clientVersion = ''): array
     {
         $knownVersions   = ['2025-03-26', '2024-11-05'];
-        $negotiated      = in_array($clientVersion, $knownVersions, true) ? $clientVersion : self::PROTOCOL_VERSION;
+        $negotiated      = in_array($clientVersion, $knownVersions, true) ? $clientVersion : $knownVersions[0];
 
         $result = [
             'protocolVersion' => $negotiated,

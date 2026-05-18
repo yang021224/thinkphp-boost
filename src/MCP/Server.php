@@ -21,8 +21,11 @@ class Server
     /** @var bool 是否已完成初始化握手 */
     private bool $initialized = false;
 
-    /** @var bool 是否启用调试日志 */
+    /** @var bool 是否启用调试日志（详细记录每个请求/响应） */
     private bool $debug;
+
+    /** @var bool 是否已输出过 STDERR 标识，确保关键日志始终可见 */
+    private bool $stderrEnabled;
 
     /** @var PromptsRegistry|null 已注册的提示词注册表 */
     private ?PromptsRegistry $promptsRegistry = null;
@@ -35,7 +38,8 @@ class Server
 
     public function __construct(bool $debug = false)
     {
-        $this->debug = $debug;
+        $this->debug         = $debug;
+        $this->stderrEnabled = true;
     }
 
     /**
@@ -119,7 +123,7 @@ class Server
                 continue;
             }
 
-            $this->log("收到请求: {$line}");
+            $this->log("收到请求: {$line}", false);
 
             // ob_start 防止工具内部的意外 echo/print 污染 JSON-RPC STDOUT 流
             ob_start();
@@ -163,7 +167,7 @@ class Server
         $method = $request['method'];
         $params = $request['params'];
 
-        $this->log("处理方法: {$method}（id=" . json_encode($id) . "）");
+        $this->log("处理方法: {$method}（id=" . json_encode($id) . "）", false);
 
         // 通知类消息（无 id）不需要返回响应
         $isNotification = !array_key_exists('id', json_decode($rawJson, true));
@@ -194,11 +198,17 @@ class Server
         $clientName        = $params['clientInfo']['name'] ?? 'unknown';
         $clientVersion     = $params['clientInfo']['version'] ?? 'unknown';
         $protocolVersion   = $params['protocolVersion'] ?? '';
+        $clientCapabilities = $params['capabilities'] ?? [];
 
-        $this->log("客户端信息: {$clientName} v{$clientVersion}，协议版本: {$protocolVersion}");
+        $this->log("收到 initialize 请求: 客户端={$clientName} v{$clientVersion}, 请求协议版本={$protocolVersion}");
+
+        $response = Protocol::buildInitializeResponse($id, $this->instructions, $protocolVersion);
         $this->initialized = true;
 
-        return Protocol::buildInitializeResponse($id, $this->instructions, $protocolVersion);
+        $negotiated = $response['result']['protocolVersion'] ?? '?';
+        $this->log("初始化握手完成，协商协议版本: {$negotiated}");
+
+        return $response;
     }
 
     /**
@@ -216,7 +226,7 @@ class Server
             ];
         }
 
-        $this->log("返回 " . count($toolList) . " 个工具");
+        $this->log("返回 " . count($toolList) . " 个工具", false);
 
         return Protocol::buildToolsListResponse($id, $toolList);
     }
@@ -247,11 +257,11 @@ class Server
 
         $tool = $this->tools[$toolName];
 
-        $this->log("执行工具: {$toolName}，参数: " . json_encode($toolInput, JSON_UNESCAPED_UNICODE));
+        $this->log("执行工具: {$toolName}，参数: " . json_encode($toolInput, JSON_UNESCAPED_UNICODE), false);
 
         try {
             $result = $tool->execute(is_array($toolInput) ? $toolInput : []);
-            $this->log("工具 {$toolName} 执行完成，结果长度: " . strlen($result));
+            $this->log("工具 {$toolName} 执行完成，结果长度: " . strlen($result), false);
             return Protocol::buildToolCallResponse($id, $result);
         } catch (\Throwable $e) {
             $this->log("工具 {$toolName} 执行异常: " . $e->getMessage());
@@ -341,7 +351,7 @@ class Server
     {
         try {
             $json = Protocol::encode($response);
-            $this->log("发送响应: {$json}");
+            $this->log("发送响应: {$json}", false);
 
             // 写入 STDOUT，每条响应以换行符结尾
             fwrite(STDOUT, $json . "\n");
@@ -357,14 +367,22 @@ class Server
     }
 
     /**
-     * 向 STDERR 写入调试日志
-     * 注意：永远不能写入 STDOUT，否则破坏 JSON-RPC 协议
+     * 向 STDERR 写入日志
+     *
+     * 关键事件（初始化、错误、EOF 等）始终输出，不受 --debug 控制。
+     * 只有请求/响应体的详细内容受 --debug 控制，避免正常使用时日志过多。
      */
-    private function log(string $message): void
+    private function log(string $message, bool $always = true): void
     {
-        if ($this->debug) {
-            $timestamp = date('Y-m-d H:i:s');
-            fwrite(STDERR, "[{$timestamp}] [thinkphp-boost] {$message}\n");
+        if (!$always && !$this->debug) {
+            return;
         }
+
+        if (!$this->stderrEnabled) {
+            return;
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        @fwrite(STDERR, "[{$timestamp}] [thinkphp-boost] {$message}\n");
     }
 }
