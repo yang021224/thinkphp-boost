@@ -112,8 +112,12 @@ class Server
 
             // STDIN 关闭（EOF），正常退出
             if ($line === false) {
-                $this->log("STDIN 已关闭，服务器退出。", false);
-                exit(0);
+                if (feof(STDIN)) {
+                    $this->log("STDIN 已关闭，服务器退出。", false);
+                    exit(0);
+                }
+                // 被信号中断（EINTR），继续等待
+                continue;
             }
 
             $line = trim($line);
@@ -345,24 +349,25 @@ class Server
 
     /**
      * 将响应编码为 JSON 并写入 STDOUT
+     * 若写入失败（SIGPIPE 被忽略后 fwrite 返回 false），说明客户端已断开，优雅退出。
      */
     private function sendResponse(array $response): void
     {
         try {
             $json = Protocol::encode($response);
             $this->log("发送响应: {$json}", false);
-
-            // 写入 STDOUT，每条响应以换行符结尾
-            fwrite(STDOUT, $json . "\n");
-            fflush(STDOUT);
         } catch (\JsonException $e) {
             $this->log("响应序列化失败: {$e->getMessage()}");
-
-            // 尝试发送一个最基本的错误响应
-            $fallback = '{"jsonrpc":"2.0","id":null,"error":{"code":-32603,"message":"Internal serialization error"}}';
-            fwrite(STDOUT, $fallback . "\n");
-            fflush(STDOUT);
+            $json = '{"jsonrpc":"2.0","id":null,"error":{"code":-32603,"message":"Internal serialization error"}}';
         }
+
+        // 写入 STDOUT，每条响应以换行符结尾
+        $written = @fwrite(STDOUT, $json . "\n");
+        if ($written === false) {
+            $this->log("STDOUT 写入失败（客户端已断开），服务器退出。", false);
+            exit(0);
+        }
+        @fflush(STDOUT);
     }
 
     /**

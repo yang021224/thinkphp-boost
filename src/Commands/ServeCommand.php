@@ -75,6 +75,13 @@ class ServeCommand extends Command
             }
         });
 
+        // 忽略 SIGPIPE：客户端断开时 fwrite(STDOUT) 会触发 SIGPIPE，默认行为是终止进程。
+        // 忽略后 fwrite 仅返回 false，由 Server::sendResponse() 检测并优雅退出。
+        if (function_exists('pcntl_signal')) {
+            pcntl_async_signals(true);
+            pcntl_signal(SIGPIPE, SIG_IGN);
+        }
+
         if ($debug) {
             fwrite(STDERR, "启动 ThinkPHP Boost MCP Server...\n");
         }
